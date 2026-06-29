@@ -1,0 +1,20 @@
+{
+  "name": "shopify-blog-importer",
+  "version": "1.0.0",
+  "description": "Import WordPress blog posts into a Shopify store via the Admin GraphQL API",
+  "main": "import.js",
+  "scripts": {
+    "list-blogs": "node list-blogs.js",
+    "import":     "node import.js",
+    "dry-run":    "node import.js --dry-run"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0",
+    "xml2js":     "^0.6.2"
+  },
+  "keywords": ["shopify", "wordpress", "blog", "import", "migration"],
+  "license": "MIT"
+}
