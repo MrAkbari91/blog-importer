@@ -1,0 +1,2326 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WordPress → Shopify Blog Importer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #03060f;
+      --bg2: #070c18;
+      --surface: #0c1220;
+      --surface2: #111929;
+      --border: rgba(255, 255, 255, 0.07);
+      --border2: rgba(255, 255, 255, 0.13);
+      --green: #96bf48;
+      --green2: #6d9c28;
+      --green-dim: rgba(150, 191, 72, 0.15);
+      --green-glow: rgba(150, 191, 72, 0.25);
+      --purple: #a855f7;
+      --blue: #60a5fa;
+      --text: #f0f6fc;
+      --text2: #c9d1d9;
+      --muted: #6e7681;
+      --error: #f85149;
+      --success: #3fb950;
+      --warning: #d29922;
+      --r: 16px;
+      --rs: 10px;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Background ────────────────────────── */
+    .bg-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+      background-size: 56px 56px;
+    }
+
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(130px);
+      opacity: 0.13;
+      animation: orb-drift 22s ease-in-out infinite;
+    }
+
+    .orb1 {
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, #a855f7, transparent 65%);
+      top: -250px;
+      left: -150px;
+      animation-delay: 0s;
+    }
+
+    .orb2 {
+      width: 550px;
+      height: 550px;
+      background: radial-gradient(circle, #96bf48, transparent 65%);
+      bottom: -150px;
+      right: -100px;
+      animation-delay: -11s;
+    }
+
+    .orb3 {
+      width: 420px;
+      height: 420px;
+      background: radial-gradient(circle, #3b82f6, transparent 65%);
+      top: 45%;
+      right: 15%;
+      animation-delay: -6s;
+    }
+
+    @keyframes orb-drift {
+
+      0%,
+      100% {
+        transform: translate(0, 0) scale(1);
+      }
+
+      33% {
+        transform: translate(35px, -25px) scale(1.06);
+      }
+
+      66% {
+        transform: translate(-20px, 22px) scale(0.94);
+      }
+    }
+
+    /* ── Layout ────────────────────────────── */
+    .page {
+      position: relative;
+      z-index: 1;
+      padding: 48px 20px 100px;
+    }
+
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* ── Hero ──────────────────────────────── */
+    .hero {
+      text-align: center;
+      padding-bottom: 64px;
+      animation: fade-up .65s ease both;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(150, 191, 72, .09);
+      border: 1px solid rgba(150, 191, 72, .28);
+      border-radius: 99px;
+      padding: 6px 18px;
+      font-size: .75rem;
+      font-weight: 600;
+      color: var(--green);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pdot 2s ease-in-out infinite;
+    }
+
+    @keyframes pdot {
+
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1)
+      }
+
+      50% {
+        opacity: .4;
+        transform: scale(.65)
+      }
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5.5vw, 3.4rem);
+      font-weight: 900;
+      line-height: 1.08;
+      letter-spacing: -.03em;
+      margin-bottom: 18px;
+    }
+
+    .hero h1 .dim {
+      display: block;
+      color: var(--text2);
+    }
+
+    .hero h1 .grd {
+      display: block;
+      background: linear-gradient(120deg, #96bf48 0%, #d4f06b 45%, #96bf48 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 3.5s linear infinite;
+    }
+
+    @keyframes shimmer {
+      to {
+        background-position: 200% center;
+      }
+    }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 1.05rem;
+      max-width: 500px;
+      margin: 0 auto;
+      line-height: 1.65;
+    }
+
+    /* ── How it works ─────────────────────── */
+    .how-wrap {
+      margin-bottom: 52px;
+      animation: fade-up .65s .1s ease both;
+    }
+
+    .how-label {
+      text-align: center;
+      font-size: .72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--muted);
+      margin-bottom: 22px;
+    }
+
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      position: relative;
+    }
+
+    .how-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 22px 18px;
+      text-align: center;
+      transition: border-color .3s, transform .3s;
+    }
+
+    .how-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-3px);
+    }
+
+    .how-num {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: .85rem;
+      margin: 0 auto 14px;
+    }
+
+    .how-card:nth-child(1) .how-num {
+      background: rgba(150, 191, 72, .13);
+      color: var(--green);
+      border: 1px solid rgba(150, 191, 72, .3);
+    }
+
+    .how-card:nth-child(2) .how-num {
+      background: rgba(168, 85, 247, .13);
+      color: var(--purple);
+      border: 1px solid rgba(168, 85, 247, .3);
+    }
+
+    .how-card:nth-child(3) .how-num {
+      background: rgba(96, 165, 250, .13);
+      color: var(--blue);
+      border: 1px solid rgba(96, 165, 250, .3);
+    }
+
+    .how-card h3 {
+      font-size: .88rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .how-card p {
+      font-size: .76rem;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    /* ── Section ───────────────────────────── */
+    .section {
+      margin-bottom: 18px;
+      animation: fade-up .6s ease both;
+    }
+
+    .section:nth-child(1) {
+      animation-delay: .15s
+    }
+
+    .section:nth-child(2) {
+      animation-delay: .22s
+    }
+
+    .section:nth-child(3) {
+      animation-delay: .29s
+    }
+
+    .sec-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .step-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, var(--green), var(--green2));
+      color: #000;
+      font-weight: 700;
+      font-size: .82rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px var(--green-glow);
+    }
+
+    .sec-title {
+      font-size: .98rem;
+      font-weight: 600;
+    }
+
+    .sec-sub {
+      font-size: .76rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 28px;
+      transition: border-color .3s;
+    }
+
+    .card:focus-within {
+      border-color: rgba(150, 191, 72, .22);
+    }
+
+    /* ── Fields ────────────────────────────── */
+    .frow {
+      margin-bottom: 20px;
+    }
+
+    .frow:last-child {
+      margin-bottom: 0;
+    }
+
+    .lbl {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .83rem;
+      font-weight: 500;
+      color: var(--text2);
+      margin-bottom: 8px;
+    }
+
+    .lbl .req {
+      color: var(--error);
+    }
+
+    .lbl .tag {
+      font-size: .68rem;
+      background: rgba(150, 191, 72, .1);
+      color: var(--green);
+      border: 1px solid rgba(150, 191, 72, .2);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+
+    .hint {
+      font-size: .73rem;
+      color: var(--muted);
+      margin-top: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .ferr {
+      font-size: .73rem;
+      color: var(--error);
+      margin-top: 6px;
+      display: none;
+      align-items: center;
+      gap: 5px;
+      animation: shk .32s ease;
+    }
+
+    .ferr.show {
+      display: flex;
+    }
+
+    @keyframes shk {
+
+      0%,
+      100% {
+        transform: translateX(0)
+      }
+
+      20% {
+        transform: translateX(-5px)
+      }
+
+      40% {
+        transform: translateX(5px)
+      }
+
+      60% {
+        transform: translateX(-3px)
+      }
+
+      80% {
+        transform: translateX(3px)
+      }
+    }
+
+    input[type="text"],
+    input[type="password"],
+    select {
+      width: 100%;
+      background: var(--bg2);
+      border: 1px solid var(--border2);
+      border-radius: var(--rs);
+      color: var(--text);
+      padding: 11px 14px;
+      font-size: .88rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(150, 191, 72, .1);
+    }
+
+    input.err,
+    select.err {
+      border-color: var(--error);
+      box-shadow: 0 0 0 3px rgba(248, 81, 73, .1);
+    }
+
+    input::placeholder {
+      color: var(--muted);
+      font-size: .85rem;
+    }
+
+    select option {
+      background: var(--surface);
+    }
+
+    select:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    .inp-wrap {
+      position: relative;
+    }
+
+    .inp-wrap input {
+      padding-right: 48px;
+    }
+
+    .eye-btn {
+      position: absolute;
+      right: 1px;
+      top: 1px;
+      bottom: 1px;
+      width: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      border-radius: 0 var(--rs) var(--rs) 0;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color .2s;
+    }
+
+    .eye-btn:hover {
+      color: var(--text2);
+    }
+
+    .fetch-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .fetch-row select {
+      flex: 1;
+    }
+
+    .fetch-btn {
+      white-space: nowrap;
+      padding: 11px 18px;
+      background: transparent;
+      border: 1px solid var(--green);
+      color: var(--green);
+      border-radius: var(--rs);
+      font-size: .83rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .fetch-btn:hover:not(:disabled) {
+      background: var(--green);
+      color: #000;
+    }
+
+    .fetch-btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* ── Upload zone ────────────────────────── */
+    .upload-zone {
+      position: relative;
+      border: 2px dashed var(--border2);
+      border-radius: var(--r);
+      padding: 52px 32px;
+      text-align: center;
+      cursor: pointer;
+      overflow: hidden;
+      transition: all .32s cubic-bezier(.4, 0, .2, 1);
+      background: var(--bg2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 210px;
+    }
+
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      border: none;
+      padding: 0;
+      font-size: 0;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag {
+      border-color: var(--green);
+      background: rgba(150, 191, 72, .03);
+      box-shadow: 0 0 48px rgba(150, 191, 72, .07), inset 0 0 40px rgba(150, 191, 72, .03);
+    }
+
+    .upload-zone.drag {
+      transform: scale(1.012);
+    }
+
+    /* corner brackets */
+    .upload-zone::before,
+    .upload-zone::after {
+      content: '';
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+
+    .upload-zone::before {
+      top: 10px;
+      left: 10px;
+      border-top: 2px solid var(--green);
+      border-left: 2px solid var(--green);
+      border-radius: 3px 0 0 0;
+    }
+
+    .upload-zone::after {
+      bottom: 10px;
+      right: 10px;
+      border-bottom: 2px solid var(--green);
+      border-right: 2px solid var(--green);
+      border-radius: 0 0 3px 0;
+    }
+
+    .upload-zone:hover::before,
+    .upload-zone:hover::after,
+    .upload-zone.drag::before,
+    .upload-zone.drag::after {
+      opacity: 1;
+    }
+
+    .upload-zone.has-file {
+      border-style: solid;
+      border-color: var(--green);
+      background: rgba(150, 191, 72, .035);
+      padding: 32px;
+    }
+
+    .upload-zone.has-file::before,
+    .upload-zone.has-file::after {
+      opacity: 1;
+    }
+
+    .upload-zone.zone-err {
+      border-color: var(--error);
+      background: rgba(248, 81, 73, .04);
+      animation: zone-shk .42s ease;
+    }
+
+    @keyframes zone-shk {
+
+      0%,
+      100% {
+        transform: translateX(0)
+      }
+
+      15% {
+        transform: translateX(-8px)
+      }
+
+      30% {
+        transform: translateX(8px)
+      }
+
+      45% {
+        transform: translateX(-5px)
+      }
+
+      60% {
+        transform: translateX(5px)
+      }
+
+      75% {
+        transform: translateX(-2px)
+      }
+
+      90% {
+        transform: translateX(2px)
+      }
+    }
+
+    /* floating particles */
+    .particles {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .3s;
+    }
+
+    .upload-zone.drag .particles {
+      opacity: 1;
+    }
+
+    .ptcl {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: ptcl-up 1.8s ease-in-out infinite;
+    }
+
+    .ptcl:nth-child(1) {
+      left: 12%;
+      top: 75%;
+      animation-delay: 0s
+    }
+
+    .ptcl:nth-child(2) {
+      left: 28%;
+      top: 80%;
+      animation-delay: .35s
+    }
+
+    .ptcl:nth-child(3) {
+      left: 50%;
+      top: 78%;
+      animation-delay: .7s
+    }
+
+    .ptcl:nth-child(4) {
+      left: 68%;
+      top: 72%;
+      animation-delay: .15s
+    }
+
+    .ptcl:nth-child(5) {
+      left: 83%;
+      top: 76%;
+      animation-delay: .55s
+    }
+
+    .ptcl:nth-child(6) {
+      left: 40%;
+      top: 85%;
+      animation-delay: .9s
+    }
+
+    @keyframes ptcl-up {
+      0% {
+        transform: translateY(0) scale(1);
+        opacity: .7
+      }
+
+      50% {
+        transform: translateY(-35px) scale(1.6);
+        opacity: 1
+      }
+
+      100% {
+        transform: translateY(-70px) scale(0);
+        opacity: 0
+      }
+    }
+
+    /* doc SVG animation */
+    .upload-doc {
+      margin-bottom: 18px;
+      transition: transform .35s cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    .upload-zone:hover .upload-doc,
+    .upload-zone.drag .upload-doc {
+      transform: translateY(-8px);
+    }
+
+    .upload-zone.has-file .upload-doc {
+      display: none;
+    }
+
+    .upload-idle-text {
+      pointer-events: none;
+    }
+
+    .upload-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+      transition: color .2s;
+    }
+
+    .upload-zone:hover .upload-title,
+    .upload-zone.drag .upload-title {
+      color: var(--green);
+    }
+
+    .upload-sub {
+      font-size: .8rem;
+      color: var(--muted);
+    }
+
+    .upload-sub .hl {
+      color: var(--green);
+      font-weight: 600;
+    }
+
+    .upload-zone.has-file .upload-idle-text {
+      display: none;
+    }
+
+    /* file preview */
+    .file-preview {
+      display: none;
+      width: 100%;
+    }
+
+    .upload-zone.has-file .file-preview {
+      display: block;
+    }
+
+    .file-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(150, 191, 72, .08);
+      border: 1px solid rgba(150, 191, 72, .22);
+      border-radius: var(--rs);
+      padding: 14px 16px;
+      text-align: left;
+      animation: pop .3s cubic-bezier(.34, 1.56, .64, 1) both;
+    }
+
+    @keyframes pop {
+      from {
+        transform: scale(.88);
+        opacity: 0
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1
+      }
+    }
+
+    .fc-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 9px;
+      background: rgba(150, 191, 72, .14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--green);
+      flex-shrink: 0;
+    }
+
+    .fc-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .fc-name {
+      font-size: .88rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .fc-meta {
+      font-size: .73rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .fc-ok {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--success);
+      font-size: .75rem;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    .clr-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 6px;
+      border-radius: 7px;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .clr-btn:hover {
+      color: var(--error);
+      background: rgba(248, 81, 73, .1);
+    }
+
+    /* upload error banner */
+    .up-err {
+      display: none;
+      margin-top: 12px;
+    }
+
+    .up-err.show {
+      display: block;
+    }
+
+    .err-banner {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: rgba(248, 81, 73, .08);
+      border: 1px solid rgba(248, 81, 73, .28);
+      border-radius: var(--rs);
+      padding: 14px 16px;
+      animation: fade-in .2s ease;
+    }
+
+    .err-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: rgba(248, 81, 73, .14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--error);
+      flex-shrink: 0;
+    }
+
+    .err-title {
+      font-size: .83rem;
+      font-weight: 700;
+      color: var(--error);
+      margin-bottom: 4px;
+    }
+
+    .err-msg {
+      font-size: .76rem;
+      color: var(--text2);
+      line-height: 1.45;
+    }
+
+    /* ── Advanced ───────────────────────────── */
+    .adv-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: .8rem;
+      font-family: inherit;
+      cursor: pointer;
+      padding: 0;
+      margin-top: 20px;
+      transition: color .2s;
+    }
+
+    .adv-btn:hover {
+      color: var(--text2);
+    }
+
+    .adv-chev {
+      transition: transform .25s;
+      display: flex;
+    }
+
+    .adv-btn.open .adv-chev {
+      transform: rotate(180deg);
+    }
+
+    .adv-body {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .35s cubic-bezier(.4, 0, .2, 1), opacity .3s;
+      opacity: 0;
+    }
+
+    .adv-body.open {
+      max-height: 220px;
+      opacity: 1;
+    }
+
+    .adv-inner {
+      padding-top: 16px;
+    }
+
+    /* ── Import button ──────────────────────── */
+    .import-wrap {
+      margin-top: 24px;
+      animation: fade-up .6s .4s ease both;
+    }
+
+    #importBtn {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(120deg, var(--green) 0%, #b8e058 50%, var(--green2) 100%);
+      background-size: 200% auto;
+      color: #000;
+      font-weight: 800;
+      font-size: 1rem;
+      font-family: inherit;
+      border: none;
+      border-radius: var(--rs);
+      cursor: pointer;
+      transition: all .3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 28px rgba(150, 191, 72, .32);
+      letter-spacing: .01em;
+    }
+
+    #importBtn:hover:not(:disabled) {
+      background-position: right center;
+      box-shadow: 0 6px 40px rgba(150, 191, 72, .48);
+      transform: translateY(-1px);
+    }
+
+    #importBtn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    #importBtn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* ── Progress section ───────────────────── */
+    .prog-section {
+      display: none;
+      margin-top: 36px;
+      animation: fade-up .4s ease both;
+    }
+
+    .prog-section.show {
+      display: block;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .sc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--rs);
+      padding: 16px 10px;
+      text-align: center;
+    }
+
+    .sv {
+      font-size: 1.85rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sl {
+      font-size: .66rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--muted);
+    }
+
+    .sc-total .sv {
+      color: var(--blue);
+    }
+
+    .sc-done .sv {
+      color: var(--text2);
+    }
+
+    .sc-cre .sv {
+      color: #a78bfa;
+    }
+
+    .sc-upd .sv {
+      color: var(--warning);
+    }
+
+    .sc-fail .sv {
+      color: var(--error);
+    }
+
+    .prog-wrap {
+      margin-bottom: 20px;
+    }
+
+    .prog-hdr {
+      display: flex;
+      justify-content: space-between;
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .prog-track {
+      height: 6px;
+      background: var(--border2);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .prog-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green), #d4f06b);
+      border-radius: 99px;
+      width: 0%;
+      transition: width .5s cubic-bezier(.4, 0, .2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .prog-fill::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 50px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .35));
+      animation: bar-shine 1.6s ease-in-out infinite;
+    }
+
+    @keyframes bar-shine {
+
+      0%,
+      100% {
+        opacity: 0
+      }
+
+      50% {
+        opacity: 1
+      }
+    }
+
+    .log-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+
+    .log-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .log-bar-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: pdot 1.5s ease-in-out infinite;
+    }
+
+    .log-clr-btn {
+      font-size: .72rem;
+      color: var(--muted);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 3px 10px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all .2s;
+    }
+
+    .log-clr-btn:hover {
+      color: var(--text2);
+      border-color: var(--border2);
+    }
+
+    #logBox {
+      height: 300px;
+      overflow-y: auto;
+      padding: 12px 16px;
+      font-family: 'Cascadia Code', 'Consolas', 'SF Mono', monospace;
+      font-size: .76rem;
+      line-height: 1.85;
+      scroll-behavior: smooth;
+    }
+
+    #logBox::-webkit-scrollbar {
+      width: 3px;
+    }
+
+    #logBox::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #logBox::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 99px;
+    }
+
+    .ll {
+      display: flex;
+      gap: 12px;
+    }
+
+    .lts {
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .lm {
+      flex: 1;
+      word-break: break-all;
+    }
+
+    .lm.success {
+      color: var(--success);
+    }
+
+    .lm.error {
+      color: var(--error);
+    }
+
+    .lm.warning {
+      color: var(--warning);
+    }
+
+    .lm.info {
+      color: var(--blue);
+    }
+
+    .lm.muted {
+      color: var(--muted);
+    }
+
+    /* ── Result ─────────────────────────────── */
+    .result-section {
+      display: none;
+      margin-top: 20px;
+      animation: fade-up .5s ease both;
+    }
+
+    .result-section.show {
+      display: block;
+    }
+
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 28px;
+    }
+
+    .result-banner {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 20px 24px;
+      border-radius: var(--rs);
+      margin-bottom: 20px;
+      animation: pop .4s cubic-bezier(.34, 1.56, .64, 1) both;
+    }
+
+    .rb-success {
+      background: rgba(63, 185, 80, .08);
+      border: 1px solid rgba(63, 185, 80, .28);
+    }
+
+    .rb-partial {
+      background: rgba(210, 153, 34, .07);
+      border: 1px solid rgba(210, 153, 34, .28);
+    }
+
+    .rb-fail {
+      background: rgba(248, 81, 73, .08);
+      border: 1px solid rgba(248, 81, 73, .28);
+    }
+
+    .rb-icon {
+      font-size: 2.4rem;
+      line-height: 1;
+      animation: bounce-in .5s cubic-bezier(.34, 1.56, .64, 1) .1s both;
+    }
+
+    @keyframes bounce-in {
+      from {
+        transform: scale(0);
+        opacity: 0
+      }
+
+      to {
+        transform: scale(1);
+        opacity: 1
+      }
+    }
+
+    .rb-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .rb-sub {
+      font-size: .83rem;
+      color: var(--muted);
+    }
+
+    .rb-sub a {
+      color: var(--green);
+      text-decoration: none;
+    }
+
+    .rb-sub a:hover {
+      text-decoration: underline;
+    }
+
+    .fp-list {
+      background: rgba(248, 81, 73, .05);
+      border: 1px solid rgba(248, 81, 73, .18);
+      border-radius: var(--rs);
+      margin-bottom: 20px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .fp-hdr {
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(248, 81, 73, .14);
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--error);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .fp-item {
+      padding: 10px 16px;
+      border-bottom: 1px solid rgba(248, 81, 73, .07);
+      font-size: .8rem;
+    }
+
+    .fp-item:last-child {
+      border-bottom: none;
+    }
+
+    .fp-t {
+      font-weight: 500;
+      color: var(--text2);
+      margin-bottom: 2px;
+    }
+
+    .fp-e {
+      color: var(--error);
+      font-size: .73rem;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border-radius: var(--rs);
+      font-size: .85rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      border: none;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .btn-primary {
+      background: var(--green);
+      color: #000;
+    }
+
+    .btn-primary:hover {
+      background: #b4e05a;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border2);
+      color: var(--text2);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--green);
+      color: var(--green);
+    }
+
+    /* ── Spinner ────────────────────────────── */
+    .spin {
+      display: inline-block;
+      width: 15px;
+      height: 15px;
+      border: 2px solid rgba(0, 0, 0, .25);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: rot .6s linear infinite;
+    }
+
+    .spin-g {
+      border-color: rgba(150, 191, 72, .25);
+      border-top-color: var(--green);
+    }
+
+    @keyframes rot {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* ── Toast ──────────────────────────────── */
+    .toast-stack {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--rs);
+      padding: 12px 16px;
+      font-size: .83rem;
+      min-width: 240px;
+      max-width: 360px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, .5);
+      transform: translateX(110px);
+      opacity: 0;
+      transition: all .38s cubic-bezier(.34, 1.56, .64, 1);
+      pointer-events: auto;
+    }
+
+    .toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    .toast.hide {
+      transform: translateX(110px);
+      opacity: 0;
+      transition: all .28s ease;
+    }
+
+    .toast.t-err {
+      border-color: rgba(248, 81, 73, .38);
+    }
+
+    .toast.t-ok {
+      border-color: rgba(63, 185, 80, .38);
+    }
+
+    .toast.t-info {
+      border-color: rgba(96, 165, 250, .38);
+    }
+
+    .tdot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .t-err .tdot {
+      background: var(--error);
+    }
+
+    .t-ok .tdot {
+      background: var(--success);
+    }
+
+    .t-info .tdot {
+      background: var(--blue);
+    }
+
+    /* ── Animations ─────────────────────────── */
+    @keyframes fade-up {
+      from {
+        opacity: 0;
+        transform: translateY(22px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    @keyframes fade-in {
+      from {
+        opacity: 0
+      }
+
+      to {
+        opacity: 1
+      }
+    }
+
+    /* ── Responsive ─────────────────────────── */
+    @media(max-width:640px) {
+      .how-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+
+      .fetch-row {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Background layer -->
+  <div class="bg-layer" aria-hidden="true">
+    <div class="bg-grid"></div>
+    <div class="bg-orb orb1"></div>
+    <div class="bg-orb orb2"></div>
+    <div class="bg-orb orb3"></div>
+  </div>
+
+  <div class="page">
+    <div class="container">
+
+      <!-- ══ HERO ══ -->
+      <header class="hero">
+        <div class="hero-badge">
+          <div class="pulse-dot"></div>Free Migration Tool
+        </div>
+        <h1>
+          <span class="dim">Move your WordPress blog</span>
+          <span class="grd">to Shopify in minutes</span>
+        </h1>
+        <p>Upload your WordPress XML export and watch all your published posts land in Shopify with real-time progress,
+          smart duplicate detection, and zero coding.</p>
+      </header>
+
+      <!-- ══ HOW IT WORKS ══ -->
+      <div class="how-wrap">
+        <div class="how-label">How it works — 3 simple steps</div>
+        <div class="how-grid">
+          <div class="how-card">
+            <div class="how-num">1</div>
+            <h3>Connect Your Store</h3>
+            <p>Enter your Shopify domain and an Admin API token to authenticate securely.</p>
+          </div>
+          <div class="how-card">
+            <div class="how-num">2</div>
+            <h3>Pick a Destination Blog</h3>
+            <p>Fetch your Shopify blogs and choose where the imported posts should appear.</p>
+          </div>
+          <div class="how-card">
+            <div class="how-num">3</div>
+            <h3>Upload &amp; Watch it Run</h3>
+            <p>Drop your WordPress XML and monitor real-time progress as each post imports.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ STEP 1 — Store Credentials ══ -->
+      <div class="section">
+        <div class="sec-head">
+          <div class="step-badge">1</div>
+          <div>
+            <div class="sec-title">Store Credentials</div>
+            <div class="sec-sub">Connect via your Shopify Admin API — takes 2 minutes to set up</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="frow">
+            <label class="lbl" for="storeUrl">Store URL <span class="req">*</span></label>
+            <input type="text" id="storeUrl" placeholder="yourstore.myshopify.com" autocomplete="off"
+              spellcheck="false" />
+            <div class="hint">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4M12 8h.01" />
+              </svg>
+              Domain only — no <code>https://</code> prefix, no trailing slash
+            </div>
+            <div class="ferr" id="err-storeUrl">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+              Please enter your Shopify store URL (e.g. mystore.myshopify.com)
+            </div>
+          </div>
+
+          <div class="frow" style="margin-bottom:0">
+            <label class="lbl" for="token">
+              Admin API Access Token <span class="req">*</span>
+              <span class="tag">shpat_…</span>
+            </label>
+            <div class="inp-wrap">
+              <input type="password" id="token" placeholder="shpat_xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off"
+                spellcheck="false" />
+              <button class="eye-btn" type="button" id="eyeBtn" onclick="toggleToken()"
+                aria-label="Toggle token visibility">
+                <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                  stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
+            <div class="hint">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              Shopify Admin → Settings → Apps → <strong>Develop apps</strong> → Create app → Configure &amp; Install
+            </div>
+            <div class="ferr" id="err-token">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+              <span id="err-token-msg">Token must start with shpat_</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ STEP 2 — Blog & Author ══ -->
+      <div class="section">
+        <div class="sec-head">
+          <div class="step-badge">2</div>
+          <div>
+            <div class="sec-title">Blog &amp; Author</div>
+            <div class="sec-sub">Choose the destination blog and an author name for all imported posts</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="frow">
+            <label class="lbl" for="authorName">Author Name <span class="req">*</span></label>
+            <input type="text" id="authorName" placeholder="e.g. Your Store Name" />
+            <div class="ferr" id="err-authorName">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+              Please enter an author name for the imported posts
+            </div>
+          </div>
+          <div class="frow" style="margin-bottom:0">
+            <label class="lbl">Destination Blog <span class="req">*</span></label>
+            <div class="fetch-row">
+              <select id="blogSelect" disabled>
+                <option value="">— Enter credentials above then click Fetch Blogs —</option>
+              </select>
+              <button class="fetch-btn" id="fetchBlogsBtn" onclick="fetchBlogs()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-4.09" />
+                </svg>
+                Fetch Blogs
+              </button>
+            </div>
+            <div class="ferr" id="err-blog">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+              </svg>
+              Please select a destination blog
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ STEP 3 — Upload ══ -->
+      <div class="section">
+        <div class="sec-head">
+          <div class="step-badge">3</div>
+          <div>
+            <div class="sec-title">WordPress Export File</div>
+            <div class="sec-sub">WordPress Admin → Tools → Export → All content → Download Export File</div>
+          </div>
+        </div>
+        <div class="card">
+          <!-- Upload zone -->
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" id="xmlFile" accept=".xml" onchange="onFileSelect(this.files[0])" />
+
+            <!-- floating particles shown on drag -->
+            <div class="particles" aria-hidden="true">
+              <div class="ptcl"></div>
+              <div class="ptcl"></div>
+              <div class="ptcl"></div>
+              <div class="ptcl"></div>
+              <div class="ptcl"></div>
+              <div class="ptcl"></div>
+            </div>
+
+            <!-- Idle UI -->
+            <div class="upload-idle-text">
+              <div class="upload-doc">
+                <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- document body -->
+                  <rect x="10" y="6" width="42" height="54" rx="5" fill="rgba(150,191,72,0.08)"
+                    stroke="rgba(150,191,72,0.35)" stroke-width="1.5" />
+                  <!-- folded corner -->
+                  <path d="M36 6 L52 22 L36 22 Z" fill="rgba(150,191,72,0.12)" stroke="rgba(150,191,72,0.3)"
+                    stroke-width="1.5" stroke-linejoin="round" />
+                  <!-- XML tag lines -->
+                  <line x1="18" y1="32" x2="44" y2="32" stroke="rgba(150,191,72,0.5)" stroke-width="1.5"
+                    stroke-linecap="round" />
+                  <line x1="18" y1="39" x2="38" y2="39" stroke="rgba(150,191,72,0.3)" stroke-width="1.5"
+                    stroke-linecap="round" />
+                  <line x1="18" y1="46" x2="32" y2="46" stroke="rgba(150,191,72,0.25)" stroke-width="1.5"
+                    stroke-linecap="round" />
+                  <!-- upload badge -->
+                  <circle cx="57" cy="57" r="13" fill="rgba(150,191,72,0.15)" stroke="rgba(150,191,72,0.5)"
+                    stroke-width="1.5" />
+                  <path d="M57 52v10M53 55.5l4-4 4 4" stroke="#96bf48" stroke-width="1.8" stroke-linecap="round"
+                    stroke-linejoin="round" />
+                </svg>
+              </div>
+              <div class="upload-title">Drop your XML export here</div>
+              <div class="upload-sub"><span class="hl">Click to browse</span> &nbsp;·&nbsp; .xml only &nbsp;·&nbsp; max
+                50 MB</div>
+            </div>
+
+            <!-- File selected preview -->
+            <div class="file-preview">
+              <div class="file-card">
+                <div class="fc-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                  </svg>
+                </div>
+                <div class="fc-info">
+                  <div class="fc-name" id="fileName">—</div>
+                  <div class="fc-meta" id="fileSize">—</div>
+                  <div class="fc-ok">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2.5">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Ready to import
+                  </div>
+                </div>
+                <button class="clr-btn" onclick="clearFile()" type="button" title="Remove file">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload error (wrong type / too large) -->
+          <div class="up-err" id="upErr">
+            <div class="err-banner">
+              <div class="err-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              <div>
+                <div class="err-title" id="upErrTitle">Invalid file</div>
+                <div class="err-msg" id="upErrMsg">Select a .xml file exported from WordPress.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Field-level validation error -->
+          <div class="ferr" id="err-file" style="margin-top:10px">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="15" y1="9" x2="9" y2="15" />
+              <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+            Please upload your WordPress XML export file
+          </div>
+
+          <!-- Advanced settings -->
+          <button class="adv-btn" id="advBtn" type="button" onclick="toggleAdv()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3" />
+              <path
+                d="M19.07 4.93l-1.41 1.41M5.34 5.34L3.93 6.75M4.93 19.07l1.41-1.41M18.66 18.66l1.41 1.41M21 12h-2M5 12H3M12 21v-2M12 5V3" />
+            </svg>
+            Advanced Settings
+            <span class="adv-chev">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </span>
+          </button>
+          <div class="adv-body" id="advBody">
+            <div class="adv-inner">
+              <div class="two-col">
+                <div class="frow" style="margin-bottom:0">
+                  <label class="lbl" for="batchSize">Batch Size</label>
+                  <input type="text" id="batchSize" value="3" />
+                  <div class="hint">Posts per API batch (1–5). Default: 3</div>
+                </div>
+                <div class="frow" style="margin-bottom:0">
+                  <label class="lbl" for="delayMs">Batch Delay (ms)</label>
+                  <input type="text" id="delayMs" value="1000" />
+                  <div class="hint">Increase to 2000 if rate-limit errors appear</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ IMPORT BUTTON ══ -->
+      <div class="import-wrap">
+        <button id="importBtn" onclick="startImport()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          Start Import
+        </button>
+      </div>
+
+      <!-- ══ PROGRESS SECTION ══ -->
+      <div class="prog-section" id="progSection">
+        <div class="stats-grid">
+          <div class="sc sc-total">
+            <div class="sv" id="statTotal">0</div>
+            <div class="sl">Total</div>
+          </div>
+          <div class="sc sc-done">
+            <div class="sv" id="statDone">0</div>
+            <div class="sl">Processed</div>
+          </div>
+          <div class="sc sc-cre">
+            <div class="sv" id="statCreated">0</div>
+            <div class="sl">Created</div>
+          </div>
+          <div class="sc sc-upd">
+            <div class="sv" id="statUpdated">0</div>
+            <div class="sl">Updated</div>
+          </div>
+          <div class="sc sc-fail">
+            <div class="sv" id="statFail">0</div>
+            <div class="sl">Failed</div>
+          </div>
+        </div>
+
+        <div class="prog-wrap">
+          <div class="prog-hdr">
+            <span id="progLabel">Preparing...</span>
+            <span id="progPct">0%</span>
+          </div>
+          <div class="prog-track">
+            <div class="prog-fill" id="progFill"></div>
+          </div>
+        </div>
+
+        <div class="log-wrap">
+          <div class="log-bar">
+            <div class="log-bar-title">
+              <div class="live-dot"></div>Live Log
+            </div>
+            <button class="log-clr-btn" onclick="clearLog()">Clear</button>
+          </div>
+          <div id="logBox"></div>
+        </div>
+      </div>
+
+      <!-- ══ RESULT SECTION ══ -->
+      <div class="result-section" id="resultSection">
+        <div class="result-card">
+          <div class="result-banner" id="resultBanner"></div>
+          <div class="fp-list" id="fpList" style="display:none"></div>
+          <div class="btn-row">
+            <button class="btn btn-primary" onclick="downloadLog()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Download Log
+            </button>
+            <button class="btn btn-ghost" onclick="resetUI()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="1 4 1 10 7 10" />
+                <path d="M3.51 15a9 9 0 1 0 .49-4.09" />
+              </svg>
+              Start New Import
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /container -->
+  </div><!-- /page -->
+
+  <!-- Toast stack -->
+  <div class="toast-stack" id="toastStack"></div>
+
+  <script>
+    // ─── State ───────────────────────────────────────────────
+    let selectedFile = null;
+    let logLines = [];
+    let importResult = null;
+    let storeUrlVal = '';
+
+    // ─── Upload zone ─────────────────────────────────────────
+    const zone = document.getElementById('uploadZone');
+
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+    zone.addEventListener('dragleave', e => { if (!zone.contains(e.relatedTarget)) zone.classList.remove('drag'); });
+    zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); onFileSelect(e.dataTransfer.files[0]); });
+
+    function onFileSelect(file) {
+      hideUpErr();
+      if (!file) return;
+
+      if (!file.name.toLowerCase().endsWith('.xml')) {
+        showUpErr('Wrong file type — not an XML file',
+          `"${file.name}" doesn't look like a WordPress export. Go to WordPress Admin → Tools → Export → All content, download the file, then upload the .xml here.`);
+        triggerZoneErr();
+        return;
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        showUpErr('File too large',
+          `${formatBytes(file.size)} exceeds the 50 MB limit. Try a date-range export in WordPress to split it into smaller chunks.`);
+        triggerZoneErr();
+        return;
+      }
+
+      selectedFile = file;
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = formatBytes(file.size) + '  ·  ' + new Date(file.lastModified).toLocaleDateString();
+      zone.classList.add('has-file');
+      clearFerr('err-file');
+      showToast('XML file loaded — ready to import', 'ok');
+    }
+
+    function clearFile() {
+      selectedFile = null;
+      document.getElementById('xmlFile').value = '';
+      zone.classList.remove('has-file', 'zone-err');
+      hideUpErr();
+    }
+
+    function triggerZoneErr() {
+      zone.classList.add('zone-err');
+      setTimeout(() => zone.classList.remove('zone-err'), 600);
+    }
+    function showUpErr(title, msg) {
+      document.getElementById('upErrTitle').textContent = title;
+      document.getElementById('upErrMsg').textContent = msg;
+      document.getElementById('upErr').classList.add('show');
+    }
+    function hideUpErr() { document.getElementById('upErr').classList.remove('show'); }
+
+    // ─── Token toggle ─────────────────────────────────────────
+    function toggleToken() {
+      const inp = document.getElementById('token');
+      const show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      document.getElementById('eyeIcon').innerHTML = show
+        ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+        : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    }
+
+    // ─── Advanced ─────────────────────────────────────────────
+    function toggleAdv() {
+      document.getElementById('advBtn').classList.toggle('open');
+      document.getElementById('advBody').classList.toggle('open');
+    }
+
+    // ─── Fetch Blogs ──────────────────────────────────────────
+    async function fetchBlogs() {
+      const storeUrl = document.getElementById('storeUrl').value.trim();
+      const token = document.getElementById('token').value.trim();
+      if (!storeUrl) { markFerr('err-storeUrl', 'storeUrl'); showToast('Enter your store URL first', 'err'); return; }
+      if (!token) { markFerr('err-token', 'token'); showToast('Enter your access token first', 'err'); return; }
+
+      const btn = document.getElementById('fetchBlogsBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spin spin-g"></span> Fetching...';
+
+      try {
+        const res = await fetch('/api/list-blogs', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ storeUrl, token }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          showToast(res.status === 401
+            ? 'Auth failed — check your token has read_publications & write_content scopes'
+            : (data.error || 'Failed to fetch blogs'), 'err');
+          return;
+        }
+
+        const sel = document.getElementById('blogSelect');
+        sel.innerHTML = '';
+
+        if (!data.blogs.length) {
+          sel.innerHTML = '<option value="">No blogs found — create one in Shopify Admin → Online Store → Blog Posts</option>';
+          showToast('No blogs found. Create one in Shopify Admin first.', 'err');
+          return;
+        }
+
+        data.blogs.forEach(b => {
+          const o = document.createElement('option');
+          o.value = b.id;
+          o.textContent = `${b.title}  (/${b.handle})`;
+          sel.appendChild(o);
+        });
+        sel.disabled = false;
+        clearFerr('err-blog'); clearFerr('err-storeUrl'); clearFerr('err-token');
+        showToast(`Found ${data.blogs.length} blog${data.blogs.length > 1 ? 's' : ''} ✓`, 'ok');
+      } catch {
+        showToast('Network error — is the server running?', 'err');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.09"/></svg> Fetch Blogs';
+      }
+    }
+
+    // ─── Validate ─────────────────────────────────────────────
+    function validate() {
+      let ok = true;
+      const v = id => document.getElementById(id).value.trim();
+
+      if (!v('storeUrl')) { markFerr('err-storeUrl', 'storeUrl'); ok = false; } else clearFerr('err-storeUrl');
+
+      const tok = v('token');
+      if (!tok) {
+        document.getElementById('err-token-msg').textContent = 'Access token is required';
+        markFerr('err-token', 'token'); ok = false;
+      } else if (!tok.startsWith('shpat_')) {
+        document.getElementById('err-token-msg').textContent = 'Token must start with shpat_';
+        markFerr('err-token', 'token'); ok = false;
+      } else clearFerr('err-token');
+
+      if (!v('authorName')) { markFerr('err-authorName', 'authorName'); ok = false; } else clearFerr('err-authorName');
+      if (!document.getElementById('blogSelect').value) { markFerr('err-blog', 'blogSelect'); ok = false; } else clearFerr('err-blog');
+      if (!selectedFile) { markFerr('err-file', null); ok = false; } else clearFerr('err-file');
+
+      return ok;
+    }
+
+    function markFerr(errId, inputId) {
+      document.getElementById(errId)?.classList.add('show');
+      if (inputId) document.getElementById(inputId)?.classList.add('err');
+    }
+    function clearFerr(errId) {
+      const el = document.getElementById(errId);
+      if (!el) return;
+      el.classList.remove('show');
+      // derive input id
+      const iid = errId === 'err-blog' ? 'blogSelect'
+        : errId === 'err-file' ? null
+          : errId.replace('err-', '');
+      if (iid) document.getElementById(iid)?.classList.remove('err');
+    }
+
+    // ─── Start import ─────────────────────────────────────────
+    async function startImport() {
+      if (!validate()) { showToast('Please fill all required fields', 'err'); return; }
+
+      storeUrlVal = document.getElementById('storeUrl').value.trim();
+
+      const fd = new FormData();
+      fd.append('storeUrl', storeUrlVal);
+      fd.append('token', document.getElementById('token').value.trim());
+      fd.append('blogId', document.getElementById('blogSelect').value);
+      fd.append('authorName', document.getElementById('authorName').value.trim());
+      fd.append('batchSize', document.getElementById('batchSize').value || '3');
+      fd.append('delayMs', document.getElementById('delayMs').value || '1000');
+      fd.append('xmlFile', selectedFile);
+
+      logLines = []; importResult = null;
+      document.getElementById('logBox').innerHTML = '';
+      document.getElementById('resultSection').classList.remove('show');
+      document.getElementById('progSection').classList.add('show');
+      document.getElementById('importBtn').disabled = true;
+      document.getElementById('importBtn').innerHTML = '<span class="spin"></span> Importing...';
+
+      setStats(0, 0, 0, 0, 0);
+      setProgress(0, 'Uploading file...');
+      addLog('Starting import...', 'info');
+
+      try {
+        const res = await fetch('/api/import', { method: 'POST', body: fd });
+
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          addLog('Error: ' + (d.error || `HTTP ${res.status}`), 'error');
+          finishImport(false); return;
+        }
+
+        const reader = res.body.getReader();
+        const dec = new TextDecoder();
+        let buf = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          const parts = buf.split('\n\n');
+          buf = parts.pop();
+          for (const part of parts) {
+            const line = part.replace(/^data:\s*/, '').trim();
+            if (!line) continue;
+            try { handleEvent(JSON.parse(line)); } catch { }
+          }
+        }
+      } catch (err) {
+        addLog('Network error: ' + err.message, 'error');
+        finishImport(false);
+      }
+    }
+
+    // ─── SSE event handler ────────────────────────────────────
+    function handleEvent(ev) {
+      switch (ev.type) {
+        case 'log':
+          addLog(ev.msg, 'muted'); break;
+        case 'parse':
+          document.getElementById('statTotal').textContent = ev.postCount;
+          addLog(`XML parsed — ${ev.postCount} published posts found (${ev.totalItems} total items)`, 'info');
+          setProgress(2, `Found ${ev.postCount} posts — starting import...`);
+          break;
+        case 'batch_start':
+          addLog(`Batch ${ev.batchNum}/${ev.totalBatches} — posts ${ev.from}–${ev.to}`, 'muted');
+          break;
+        case 'batch_done': {
+          const pct = Math.round((ev.done / ev.total) * 100);
+          setProgress(pct, `Batch ${ev.batchNum}/${ev.totalBatches} — ${ev.done}/${ev.total} processed`);
+          setStats(ev.total, ev.done, ev.createdCount, ev.updatedCount, ev.failCount);
+          const icons = ev.results.map(r => r.ok ? (r.action === 'updated' ? '↺' : '✓') : '✗').join(' ');
+          addLog(`  [${ev.done}/${ev.total}]  ${icons}`, ev.failCount > 0 ? 'warning' : 'success');
+          ev.results.filter(r => !r.ok).forEach(r => addLog(`  ✗ "${r.title}" — ${r.error}`, 'error'));
+          break;
+        }
+        case 'error':
+          addLog('ERROR: ' + ev.msg, 'error');
+          finishImport(false); break;
+        case 'done':
+          importResult = ev;
+          setStats(
+            parseInt(document.getElementById('statTotal').textContent) || 0,
+            ev.created + ev.updated + ev.failed,
+            ev.created, ev.updated, ev.failed
+          );
+          setProgress(100, 'Import complete!');
+          addLog(`Done — ${ev.created} created · ${ev.updated} updated · ${ev.failed} failed`,
+            ev.failed > 0 ? 'warning' : 'success');
+          finishImport(true); break;
+      }
+    }
+
+    function finishImport(success) {
+      document.getElementById('importBtn').disabled = false;
+      document.getElementById('importBtn').innerHTML =
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Start Import';
+      showResultCard(success);
+    }
+
+    // ─── Result card ──────────────────────────────────────────
+    function showResultCard() {
+      const banner = document.getElementById('resultBanner');
+      const fp = document.getElementById('fpList');
+
+      if (importResult?.created !== undefined) {
+        const { created: c, updated: u, failed: f } = importResult;
+        const total = c + u + f;
+
+        let cls, icon, title;
+        if (f === 0) { cls = 'rb-success'; icon = '🎉'; title = 'Import completed successfully!'; }
+        else if (c + u > 0) { cls = 'rb-partial'; icon = '⚠️'; title = 'Import finished with some errors'; }
+        else { cls = 'rb-fail'; icon = '❌'; title = 'Import failed — check the log'; }
+
+        banner.className = `result-banner ${cls}`;
+        banner.innerHTML =
+          `<div class="rb-icon">${icon}</div>
+       <div>
+         <div class="rb-title">${title}</div>
+         <div class="rb-sub">
+           ✅ ${c} created &nbsp;·&nbsp; 🔄 ${u} updated &nbsp;·&nbsp; ❌ ${f} failed
+           &nbsp;·&nbsp; <a href="https://${storeUrlVal}/blogs/news" target="_blank" rel="noopener">View blog ↗</a>
+         </div>
+       </div>`;
+
+        if (f > 0 && importResult.failedPosts?.length) {
+          fp.style.display = 'block';
+          fp.innerHTML = `<div class="fp-hdr">Failed Posts (${f})</div>` +
+            importResult.failedPosts.map(p =>
+              `<div class="fp-item"><div class="fp-t">${escHtml(p.title)}</div><div class="fp-e">${escHtml(p.error)}</div></div>`
+            ).join('');
+        } else { fp.style.display = 'none'; }
+
+      } else {
+        banner.className = 'result-banner rb-fail';
+        banner.innerHTML = '<div class="rb-icon">❌</div><div><div class="rb-title">Import did not complete</div><div class="rb-sub">Check the live log above for details.</div></div>';
+        fp.style.display = 'none';
+      }
+
+      const sec = document.getElementById('resultSection');
+      sec.classList.add('show');
+      setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+    }
+
+    // ─── Download log ─────────────────────────────────────────
+    function downloadLog() {
+      const text = logLines.map(l => `[${l.time}] ${l.msg}`).join('\n');
+      const a = Object.assign(document.createElement('a'), {
+        href: URL.createObjectURL(new Blob([text], { type: 'text/plain' })),
+        download: `import-log-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`,
+      });
+      a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    // ─── Reset ────────────────────────────────────────────────
+    function resetUI() {
+      logLines = []; importResult = null; selectedFile = null;
+      document.getElementById('xmlFile').value = '';
+      zone.classList.remove('has-file', 'zone-err');
+      hideUpErr();
+      document.getElementById('logBox').innerHTML = '';
+      document.getElementById('resultSection').classList.remove('show');
+      document.getElementById('progSection').classList.remove('show');
+      document.getElementById('importBtn').disabled = false;
+      document.getElementById('importBtn').innerHTML =
+        '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Start Import';
+      setStats(0, 0, 0, 0, 0);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────
+    function addLog(msg, cls = '') {
+      const time = new Date().toLocaleTimeString('en-GB');
+      logLines.push({ time, msg });
+      const box = document.getElementById('logBox');
+      const d = document.createElement('div');
+      d.className = 'll';
+      d.innerHTML = `<span class="lts">${time}</span><span class="lm ${cls}">${escHtml(msg)}</span>`;
+      box.appendChild(d);
+      box.scrollTop = box.scrollHeight;
+    }
+    function clearLog() { logLines = []; document.getElementById('logBox').innerHTML = ''; }
+    function setStats(total, done, created, updated, fail) {
+      document.getElementById('statTotal').textContent = total;
+      document.getElementById('statDone').textContent = done;
+      document.getElementById('statCreated').textContent = created;
+      document.getElementById('statUpdated').textContent = updated;
+      document.getElementById('statFail').textContent = fail;
+    }
+    function setProgress(pct, label) {
+      document.getElementById('progFill').style.width = pct + '%';
+      document.getElementById('progLabel').textContent = label;
+      document.getElementById('progPct').textContent = pct + '%';
+    }
+    function formatBytes(b) {
+      if (b < 1024) return b + ' B';
+      if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+      return (b / 1048576).toFixed(1) + ' MB';
+    }
+    function escHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ─── Toast ────────────────────────────────────────────────
+    function showToast(msg, type = 'info') {
+      const stack = document.getElementById('toastStack');
+      const el = document.createElement('div');
+      el.className = `toast t-${type}`;
+      el.innerHTML = `<div class="tdot"></div><span>${escHtml(msg)}</span>`;
+      stack.appendChild(el);
+      requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+      setTimeout(() => {
+        el.classList.add('hide');
+        setTimeout(() => el.remove(), 350);
+      }, 3500);
+    }
+  </script>
+</body>
+
+</html>

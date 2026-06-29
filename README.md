@@ -1,310 +1,312 @@
 # WordPress → Shopify Blog Importer
 
-A simple command-line tool that reads a WordPress XML export file and
-automatically imports all published blog posts into any Shopify store's blog.
+A **web-based** migration tool that imports all your published WordPress blog posts into any Shopify store — with a premium UI, real-time progress, and smart duplicate detection.
 
-**No coding skills required.** Just fill in 5 values in `config.js` and run two commands.
+No coding required. Open a browser, fill in a few fields, click Import.
 
 ---
 
-## What This Tool Does
+## What It Does
 
-1. Reads your WordPress XML export file (`.xml`)
-2. Finds all **published** blog posts
-3. Cleans up WordPress block-editor markup
-4. Imports each post into your Shopify blog with the correct publish date and author
-5. Shows you a live progress bar and a final summary
+- Reads your WordPress XML export (`.xml`) and finds every **published** post
+- Cleans up WordPress block-editor comments from the HTML
+- Checks your Shopify blog for existing posts and **upserts** (create new, update duplicates — never doubles up)
+- Streams real-time progress back to your browser via Server-Sent Events
+- Shows a live log, stats dashboard, and a final result summary
 
 ---
 
 ## Requirements
 
-You need the following things installed / ready before starting.
-
-| Requirement | What It Is | How to Get It |
+| Requirement | Minimum | How to get it |
 |---|---|---|
-| **Node.js** (v16 or newer) | The engine that runs this script | https://nodejs.org → click "LTS" → install |
-| **WordPress XML export file** | A `.xml` file exported from WordPress | WordPress Admin → Tools → Export → All content |
-| **Shopify store** | The store you want to import posts into | Already have one |
-| **Shopify Admin API token** | A secret key to connect to your store | See Step 3 below |
+| **Node.js** | v16 or newer | https://nodejs.org → click **LTS** |
+| **WordPress XML export** | Any size up to 50 MB | WordPress Admin → Tools → Export |
+| **Shopify store** | Any plan | Already have one |
+| **Shopify Admin API token** | `write_content` + `read_content` scopes | See Step 2 below |
 
 ---
 
-## Step-by-Step Setup Guide
+## Quick Start (3 commands)
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Start the web server
+npm start
+
+# 3. Open in your browser
+# → http://localhost:3000
+```
+
+Then follow the 3 on-screen steps in the UI.
+
+---
+
+## Full Setup Guide
 
 ### STEP 1 — Install Node.js
 
-1. Open your browser and go to **https://nodejs.org**
-2. Click the big green **"LTS"** button (recommended version)
-3. Download and run the installer
-4. Click "Next" through all steps, keep all default settings
-5. When done, open **Command Prompt** (press `Win + R`, type `cmd`, press Enter)
-6. Type this and press Enter to confirm Node.js is installed:
-   ```
-   node --version
-   ```
-   You should see something like `v20.11.0`. If you do, Node.js is ready.
+Skip this if you already have Node.js v16+.
+
+1. Go to **https://nodejs.org**
+2. Click the big **"LTS"** button and download the installer
+3. Run the installer — click **Next** through all steps, keep all defaults
+4. Open a terminal / Command Prompt and verify:
+
+```bash
+node --version
+# Should print something like: v20.11.0
+```
 
 ---
 
-### STEP 2 — Export Your WordPress Blog Posts
+### STEP 2 — Create a Shopify Admin API Token
 
-1. Log in to your **WordPress Admin** (e.g. `yoursite.com/wp-admin`)
-2. In the left menu go to **Tools → Export**
-3. Select **"All content"**
-4. Click **"Download Export File"**
-5. You will get a `.xml` file — save it somewhere easy to find
-   (e.g. `D:\projects\luxica img\blogs.xml`)
+> This is the only "technical" step. It takes about 5 minutes.
 
----
+1. Log in to your **Shopify Admin** — `https://your-store.myshopify.com/admin`
 
-### STEP 3 — Create a Shopify Admin API Access Token
+2. Click **Settings** (bottom-left corner of the admin)
 
-This is the most important step. Follow carefully.
+3. In the left sidebar click **"Apps and sales channels"**
 
-1. Log in to your **Shopify Admin** (e.g. `your-store.myshopify.com/admin`)
-
-2. Click **Settings** (bottom-left corner)
-
-3. Click **"Apps and sales channels"** in the left sidebar
-
-4. At the top-right of the page, click **"Develop apps"**
-   > If you see a warning "Allow custom app development", click "Allow custom app development" and confirm.
+4. At the top-right of that page click **"Develop apps"**
+   > If prompted with *"Allow custom app development"*, click **Allow** and confirm.
 
 5. Click **"Create an app"**
-
-6. In the popup:
-   - **App name**: type `Blog Importer` (or any name you like)
-   - **App developer**: your email is auto-filled — leave it
+   - **App name**: `Blog Importer` (or any name you like)
+   - **App developer**: your email — leave as-is
    - Click **"Create app"**
 
-7. You are now on the app detail page. Click **"Configure Admin API scopes"**
+6. On the new app's page, click **"Configure Admin API scopes"**
 
-8. In the search box, search for `content` and enable:
+7. In the search box type `content` and enable both:
    - ✅ `write_content`
    - ✅ `read_content`
    - Click **"Save"**
 
-9. Click the **"API credentials"** tab at the top
+8. Click the **"API credentials"** tab
 
-10. Under **"Admin API access token"**, click **"Reveal token once"**
+9. Under **"Admin API access token"** click **"Reveal token once"**
 
-11. **Copy the token immediately** — it starts with `shpat_`
-    > ⚠️ IMPORTANT: You can only see this token ONCE. Copy and save it now.
-    > If you lose it, you'll need to create a new app and repeat these steps.
-
-12. Paste the token into `config.js` → `SHOPIFY_ACCESS_TOKEN`
+10. **Copy the token immediately** — it starts with `shpat_`
+    > ⚠️ You can only see this token **once**. Paste it somewhere safe right now.
+    > If you lose it, delete the app and create a new one (steps 5–10).
 
 ---
 
-### STEP 4 — Open the Folder in Command Prompt
+### STEP 3 — Export Your WordPress Posts
 
-1. Open **File Explorer** and navigate to:
-   ```
-   D:\projects\luxica img\blog-importer\
-   ```
-
-2. Click on the **address bar** at the top of File Explorer (where it shows the folder path)
-
-3. Type `cmd` and press **Enter**
-   > A Command Prompt window will open, already in the correct folder.
+1. Log in to your **WordPress Admin** — `https://your-site.com/wp-admin`
+2. In the left menu go to **Tools → Export**
+3. Select **"All content"**
+4. Click **"Download Export File"**
+5. You will receive a `.xml` file — note where it saves (e.g. `Downloads/mysite.wordpress.xml`)
 
 ---
 
-### STEP 5 — Install Dependencies
+### STEP 4 — Install & Start the Tool
 
-In the Command Prompt window, type this and press Enter:
+Open a terminal in the `blog-importer` folder and run:
 
-```
+```bash
 npm install
+npm start
 ```
 
-You will see some text scrolling — this is normal. Wait for it to finish.
-When you see `added XX packages`, it is done.
+You should see:
+
+```
+  Blog Importer UI running at:  http://localhost:3000
+```
+
+Open **http://localhost:3000** in your browser.
 
 ---
 
-### STEP 6 — Edit config.js
+### STEP 5 — Use the Web UI
 
-Open the file `config.js` in any text editor (Notepad, VS Code, etc.) and fill in:
+The UI walks you through 3 steps. Here is what each one asks for:
 
-```js
-XML_FILE_PATH:        'D:/projects/luxica img/blogs.xml',  // path to your XML file
-SHOPIFY_STORE_URL:    'your-store.myshopify.com',          // your store domain
-SHOPIFY_ACCESS_TOKEN: 'shpat_xxxxxxxxxxxxxxxxxxxxxxxx',    // token from Step 3
-BLOG_ID:              'gid://shopify/Blog/XXXXXXXXXXXX',   // see Step 7 below
-AUTHOR_NAME:          'Your Store Name',                   // author shown on posts
-```
+#### Step 1 — Store Credentials
 
-> **Path tip for Windows:** Use forward slashes `/` in the file path, not backslashes `\`.
-> Correct: `'D:/projects/luxica img/blogs.xml'`
-> Wrong: `'D:\projects\luxica img\blogs.xml'`
+| Field | What to enter | Example |
+|---|---|---|
+| **Store URL** | Your `.myshopify.com` domain — no `https://`, no trailing slash | `luxicajewels.myshopify.com` |
+| **Admin API Access Token** | The `shpat_` token you copied in Step 2 | `shpat_abc123...` |
 
----
+Click **"Fetch Blogs"** after filling these in. The tool connects to your store and loads your available blogs.
 
-### STEP 7 — Find Your Blog ID
+#### Step 2 — Blog & Author
 
-You need the ID of the specific blog where posts will be imported.
-
-In your Command Prompt, run:
-
-```
-node list-blogs.js
-```
-
-You will see output like:
-
-```
-┌──────────────────────────────────────────────┬────────────────────┬──────────────────────┐
-│ Blog ID                                      │ Handle             │ Title                │
-├──────────────────────────────────────────────┼────────────────────┼──────────────────────┤
-│ gid://shopify/Blog/122489635182              │ news               │ News                 │
-│ gid://shopify/Blog/100000000099              │ tips               │ Tips & Tricks        │
-└──────────────────────────────────────────────┴────────────────────┴──────────────────────┘
-```
-
-Copy the **Blog ID** for the blog you want (e.g. `gid://shopify/Blog/122489635182`)
-and paste it into `config.js` → `BLOG_ID`.
-
----
-
-### STEP 8 — Preview (Dry Run)
-
-Before importing anything, do a test run to confirm everything is set up correctly.
-This will show you what will be imported WITHOUT actually creating any posts.
-
-```
-node import.js --dry-run
-```
-
-Expected output:
-```
-📂  XML file  : D:/projects/luxica img/blogs.xml
-    File size : 1200.4 KB
-    Total XML items  : 58
-    Published posts  : 51
-
-📋  Posts to be imported:
-     1. [2025-06-30]  Why Choose Lab Grown Diamond Over Natural Diamond?
-     2. [2025-07-10]  What Are The Benefits Of Lab-Grown Diamonds?
-     ...
-
-✅  DRY RUN complete. 51 post(s) would be imported.
-    Run without --dry-run to actually import.
-```
-
-If you see errors here, check the Troubleshooting section below.
-
----
-
-### STEP 9 — Run the Import
-
-When everything looks correct, run:
-
-```
-node import.js
-```
-
-You will see a live progress display:
-
-```
-🚀  Importing to : https://luxicajewels.myshopify.com
-    Blog ID      : gid://shopify/Blog/122489635182
-    Author       : Luxica Jewels
-    Batch size   : 3
-    Total posts  : 51
-
-   Batch   1/17  ✅ ✅ ✅   [3/51]
-   Batch   2/17  ✅ ✅ ✅   [6/51]
-   ...
-   Batch  17/17  ✅ ✅      [51/51]
-
-╔══════════════════════════════════════════════╗
-║                   SUMMARY                   ║
-╚══════════════════════════════════════════════╝
-   ✅  Imported successfully : 51 post(s)
-   ❌  Failed                : 0 post(s)
-
-   🔗  View your blog at:
-       https://luxicajewels.myshopify.com/blogs/news
-```
-
-The import is complete! Open the link to see your posts in Shopify.
-
----
-
-## Importing a Different XML File Next Time
-
-Just edit the `XML_FILE_PATH` in `config.js` to point to the new file and run `node import.js` again. Everything else stays the same.
-
----
-
-## Command Reference
-
-| Command | What It Does |
+| Field | What to enter |
 |---|---|
-| `npm install` | Install required packages (run once after downloading) |
-| `node list-blogs.js` | List all blog IDs in your Shopify store |
-| `node import.js --dry-run` | Preview what will be imported (safe — nothing is created) |
-| `node import.js` | Import all published posts |
-| `node import.js --limit=5` | Import only the first 5 posts (good for testing) |
+| **Author Name** | The name that will appear as the author on all imported posts (e.g. your store name) |
+| **Destination Blog** | Select from the dropdown — populated after clicking Fetch Blogs |
+
+#### Step 3 — WordPress Export File
+
+- Click the upload zone or drag-and-drop your `.xml` file onto it
+- Only `.xml` files are accepted, max 50 MB
+- Once selected, a file preview card appears with the filename and size
+
+Click **"Start Import"** — progress appears live on screen.
+
+---
+
+### STEP 6 — Monitor the Import
+
+While importing you will see:
+
+| Element | What it shows |
+|---|---|
+| **Stats row** | Total posts · Processed · Created · Updated · Failed |
+| **Progress bar** | Percentage complete, updated per batch |
+| **Live Log** | Timestamped log of every batch and any errors |
+
+When the import finishes, a result card appears:
+- 🎉 **All good** — all posts migrated successfully
+- ⚠️ **Partial** — some posts imported, some failed (list of failures shown)
+- ❌ **Failed** — check the log for the error detail
+
+You can **Download Log** as a `.txt` file for your records.
+
+---
+
+## Advanced Settings
+
+Expand **"Advanced Settings"** below the upload zone to tune:
+
+| Setting | Default | When to change |
+|---|---|---|
+| **Batch Size** | `3` | Lower to `1` if you hit persistent rate-limit errors |
+| **Batch Delay (ms)** | `1000` | Raise to `2000`–`3000` if Shopify returns 429 errors |
+
+---
+
+## How Duplicate Detection Works
+
+Before importing, the tool fetches **all existing article titles** from your chosen Shopify blog. For each WordPress post:
+
+- **Title not found in Shopify** → creates a new article
+- **Title already exists in Shopify** → updates the existing article (body, date, author)
+
+This means you can safely re-run the import if something fails partway through — it will not create duplicate posts.
 
 ---
 
 ## Troubleshooting
 
-### ❌ "node is not recognized as a command"
-Node.js is not installed or not in your PATH.
-→ Re-install Node.js from https://nodejs.org and restart Command Prompt.
+### "node is not recognized" / "npm is not recognized"
+Node.js is not installed or not in your system PATH.
+→ Re-install Node.js from https://nodejs.org and **restart** your terminal.
 
-### ❌ "config.js not found"
-You are running the command from the wrong folder.
-→ Make sure you `cd` into the `blog-importer` folder first, or use the address bar trick from Step 4.
+### "Authentication failed (401)"
+Your access token is wrong, expired, or was not copied fully.
+→ Go back to Shopify Admin → Settings → Apps → your app → API credentials and reveal a new token.
+→ Make sure you're entering only the token value (starting with `shpat_`), not the whole URL.
 
-### ❌ "File not found" (for the XML file)
-The path in `XML_FILE_PATH` is wrong.
-→ In File Explorer, hold **Shift** and right-click the XML file → "Copy as path".
-→ Paste into `XML_FILE_PATH` and replace all `\` with `/`.
+### Fetch Blogs returns "No blogs found"
+Your store has no blogs yet.
+→ In Shopify Admin go to **Online Store → Blog Posts → Manage blogs → Add blog**, create one, then click Fetch Blogs again.
 
-### ❌ "Authentication failed (401 Unauthorized)"
-Your `SHOPIFY_ACCESS_TOKEN` is wrong or expired.
-→ Create a new token following Step 3 again.
+### "Only .xml files are accepted"
+You may have downloaded the wrong file, or WordPress zipped the export.
+→ Go to your Downloads folder, find the file, and check the extension. If it is `.zip`, extract it first — the `.xml` is inside.
 
-### ❌ "No published blog posts found"
-Your XML file has no posts with `post_type = post` and `status = publish`.
-→ In WordPress, make sure you exported "All content" (not just "Posts").
-→ Run `node import.js --dry-run` to see what the parser finds.
+### Posts imported but content is empty or garbled
+The XML might use a non-UTF-8 encoding.
+→ Open the XML in a text editor (VS Code, Notepad++) and check that the post content is readable.
+→ Make sure you used **WordPress Admin → Tools → Export** and not a third-party plugin export.
 
-### ❌ Some posts show ❌ (failed) in the progress
-This can happen due to Shopify rate limits.
-→ Open `config.js` and change `DELAY_MS` from `1000` to `2000`.
-→ Run `node import.js` again — duplicate posts in Shopify can be deleted manually.
+### Some posts show ❌ Failed
+Usually a Shopify rate-limit (429) or a field validation error.
+→ Open **Advanced Settings** and increase **Batch Delay** to `2000`.
+→ Check the failed post list in the result card — the exact error is listed next to each post.
+→ Click **"Start New Import"** and re-run — already-imported posts will be skipped (upsert logic).
 
-### ❌ Posts imported but content is empty
-The XML file might be using a different encoding.
-→ Open the XML in a text editor and check that you can see the post content.
-→ Make sure the file is a proper WordPress WXR export.
+### "Network error — is the server running?"
+The `npm start` process stopped or was not started.
+→ Go back to your terminal and check if it is still running. If not, run `npm start` again.
+
+### Port 3000 already in use
+Another process is using port 3000.
+→ Set a different port: `PORT=3001 npm start` (Mac/Linux) or `set PORT=3001 && npm start` (Windows cmd).
+→ Then open `http://localhost:3001`.
 
 ---
 
-## Files in This Folder
+## Project Structure
 
 ```
 blog-importer/
-├── config.js        ← YOU ONLY NEED TO EDIT THIS FILE
-├── import.js        ← Main import script (do not edit)
-├── list-blogs.js    ← Helper to find blog IDs (do not edit)
-├── package.json     ← Package metadata (do not edit)
-├── README.md        ← This guide
-└── plan.md          ← Technical architecture document
+├── server.js        ← Express web server + API routes
+├── importer.js      ← XML parsing + Shopify GraphQL logic
+├── public/
+│   └── index.html   ← The web UI (single file, no build step)
+├── package.json
+└── README.md        ← This guide
 ```
 
-After running `npm install`, a `node_modules/` folder will also appear — that is normal, do not delete it.
+After running `npm install`, a `node_modules/` folder is created — that is normal, do not delete it.
+
+---
+
+## API Endpoints (for developers)
+
+The server exposes two endpoints used by the UI:
+
+### `POST /api/list-blogs`
+Fetches all blogs from a Shopify store.
+
+**Request body (JSON):**
+```json
+{ "storeUrl": "yourstore.myshopify.com", "token": "shpat_..." }
+```
+
+**Response:**
+```json
+{ "blogs": [{ "id": "gid://shopify/Blog/123", "title": "News", "handle": "news" }] }
+```
+
+### `POST /api/import`
+Accepts `multipart/form-data` and streams import progress as Server-Sent Events.
+
+**Form fields:**
+| Field | Type | Description |
+|---|---|---|
+| `storeUrl` | string | Shopify store domain |
+| `token` | string | Admin API access token |
+| `blogId` | string | Target blog GID |
+| `authorName` | string | Author name for all posts |
+| `xmlFile` | file | WordPress XML export |
+| `batchSize` | number | Posts per batch (default: 3) |
+| `delayMs` | number | Delay between batches in ms (default: 1000) |
+
+**SSE event types streamed back:**
+
+| Event type | Payload fields |
+|---|---|
+| `log` | `msg` |
+| `parse` | `totalItems`, `postCount` |
+| `batch_start` | `batchNum`, `totalBatches`, `from`, `to`, `total` |
+| `batch_done` | `batchNum`, `totalBatches`, `done`, `total`, `createdCount`, `updatedCount`, `failCount`, `results[]` |
+| `error` | `msg` |
+| `done` | `created`, `updated`, `failed`, `failedPosts[]` |
 
 ---
 
 ## Security Notes
 
-- Your `SHOPIFY_ACCESS_TOKEN` is a secret. Do **not** share `config.js` with anyone.
-- The token only has `read_content` and `write_content` permissions — it cannot access orders, customers, or payments.
-- If you ever share this folder with someone, delete your token from `config.js` first and generate a new one from Shopify Admin.
+- Your Admin API token is sent only to your own server running locally — it never goes to any third party.
+- The token's scopes are limited to `read_content` and `write_content` — it cannot access orders, customers, payments, or any other store data.
+- Do not commit the token to source control. If you share this folder, remove the token from any saved forms first.
+- The server only listens on `localhost` by default. It is not exposed to the internet unless you intentionally forward the port.
+
+---
+
+## License
+
+MIT — free to use, modify, and distribute.

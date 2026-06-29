@@ -4,17 +4,26 @@
   "description": "Import WordPress blog posts into a Shopify store via the Admin GraphQL API",
   "main": "import.js",
   "scripts": {
+    "start": "node server.js",
     "list-blogs": "node list-blogs.js",
-    "import":     "node import.js",
-    "dry-run":    "node import.js --dry-run"
+    "import": "node import.js",
+    "dry-run": "node import.js --dry-run"
   },
   "engines": {
     "node": ">=16.0.0"
   },
   "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^2.2.0",
     "node-fetch": "^2.7.0",
-    "xml2js":     "^0.6.2"
+    "xml2js": "^0.6.2"
   },
-  "keywords": ["shopify", "wordpress", "blog", "import", "migration"],
+  "keywords": [
+    "shopify",
+    "wordpress",
+    "blog",
+    "import",
+    "migration"
+  ],
   "license": "MIT"
 }
